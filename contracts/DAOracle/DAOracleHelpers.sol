@@ -14,8 +14,8 @@ library DAOracleHelpers {
       uint256 total,
       uint256 poolAmount,
       uint256 reporterAmount,
-      uint256 residualAmount,
-      uint256 vestingTime
+      uint256 residualAmount
+    //  uint256 vestingTime
     )
   {
     // multiplier = distance between last proposal and current time (in seconds)
@@ -32,7 +32,7 @@ library DAOracleHelpers {
     reporterAmount = (total * reporterShare) / 1e18;
     residualAmount = ((total - reporterAmount) * index.creatorAmount) / 1e18;
     poolAmount = total - residualAmount - reporterAmount;
-    vestingTime = 0;
+   // vestingTime = 0;
   }
 
   function dispute(
@@ -43,17 +43,23 @@ library DAOracleHelpers {
   ) public {
     IERC20 token = index.bondToken;
 
+  
+
     // Pull in funds from sponsor to cover the proposal bond
     token.safeTransferFrom(index.sponsor, address(this), index.bondAmount);
 
     // Pull in funds from disputer to match the bond
     token.safeTransferFrom(msg.sender, address(this), index.bondAmount);
 
+
+   // Bytes32 to bytes. Use instead of abi.encodePacked(arg); so there are no padded 0
+    bytes memory bytesData = _convertIdentifierToBytes(proposal.data);   
+
     // Create the request + proposal via UMA's OO
     uint256 bond = oracle.requestAndProposePriceFor(
       externalIdentifier,
       proposal.timestamp,
-      abi.encodePacked(proposal.data),
+      bytesData,   
       token,
       0,
       index.bondAmount,
@@ -76,7 +82,7 @@ library DAOracleHelpers {
     oracle.disputePriceFor(
       externalIdentifier,
       proposal.timestamp,
-      abi.encodePacked(proposal.data),
+      bytesData,   
       request,
       msg.sender,
       address(this)
@@ -93,4 +99,24 @@ library DAOracleHelpers {
   {
     return new SponsorPool(ERC20(address(index.bondToken)));
   }
+
+/** WARNING: Here be dragons. 
+This function serves the specific purpose of changning the identifier from bytes32 to bytes.
+The UMA's DVM expects bytes with no padded 0, which this function accomplishes.
+@param data - should always be an identifier that is an encoded string. This removes the possiblility
+of 0 being in the data. **/
+function _convertIdentifierToBytes(bytes32 data) internal pure returns (bytes memory) {
+    uint i = 0;
+    while (i < 32 && data[i] != 0) {
+        ++i;
+    }
+    bytes memory result = new bytes(i);
+    i = 0;
+    while (i < 32 && data[i] != 0) {
+        result[i] = data[i];
+        ++i;
+    }
+    return result;
+}
+
 }

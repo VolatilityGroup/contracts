@@ -24,6 +24,10 @@ abstract contract Slashable is AccessControl, IERC20 {
    */
   function slash(uint256 amount, address receiver) external onlyRole(SLASHER) {
     IERC20 token = underlying();
+ 
+
+
+
     require(
       token.balanceOf(address(this)) >= amount,
       "slash: insufficient balance"

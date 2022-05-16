@@ -29,7 +29,6 @@ interface SkinnyDAOracleInterface extends ethers.utils.Interface {
     "_proposalId(uint32,int256,bytes32)": FunctionFragment;
     "claimableRewards(bytes32)": FunctionFragment;
     "configureIndex(address,uint256,bytes32,uint32,uint64,uint64,uint64,uint256,uint64,address,address)": FunctionFragment;
-    "defaultDisputePeriod()": FunctionFragment;
     "dispute(bytes32)": FunctionFragment;
     "externalIdentifier()": FunctionFragment;
     "getRoleAdmin(bytes32)": FunctionFragment;
@@ -37,7 +36,9 @@ interface SkinnyDAOracleInterface extends ethers.utils.Interface {
     "hasRole(bytes32,address)": FunctionFragment;
     "index(bytes32)": FunctionFragment;
     "isDisputed(bytes32)": FunctionFragment;
+    "maxCliffTime()": FunctionFragment;
     "maxOutstandingDisputes()": FunctionFragment;
+    "maxVestingTime()": FunctionFragment;
     "oracle()": FunctionFragment;
     "pool(address)": FunctionFragment;
     "priceSettled(bytes32,uint32,bytes,(address,address,address,bool,int256,int256,uint256,uint256,uint256,uint256,uint256))": FunctionFragment;
@@ -46,9 +47,9 @@ interface SkinnyDAOracleInterface extends ethers.utils.Interface {
     "renounceRole(bytes32,address)": FunctionFragment;
     "revokeRole(bytes32,address)": FunctionFragment;
     "setExternalIdentifier(bytes32)": FunctionFragment;
-    "setMaxOutstandingDisputes(uint32)": FunctionFragment;
+    "setMaxOutstandingDisputes(uint8)": FunctionFragment;
     "setPoolFees(address,uint256,uint256,address)": FunctionFragment;
-    "setdefaultDisputePeriod(uint32)": FunctionFragment;
+    "setVestingParameters(uint32,uint32)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "vault()": FunctionFragment;
   };
@@ -88,10 +89,6 @@ interface SkinnyDAOracleInterface extends ethers.utils.Interface {
       string
     ]
   ): string;
-  encodeFunctionData(
-    functionFragment: "defaultDisputePeriod",
-    values?: undefined
-  ): string;
   encodeFunctionData(functionFragment: "dispute", values: [BytesLike]): string;
   encodeFunctionData(
     functionFragment: "externalIdentifier",
@@ -115,7 +112,15 @@ interface SkinnyDAOracleInterface extends ethers.utils.Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "maxCliffTime",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "maxOutstandingDisputes",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "maxVestingTime",
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "oracle", values?: undefined): string;
@@ -176,8 +181,8 @@ interface SkinnyDAOracleInterface extends ethers.utils.Interface {
     values: [string, BigNumberish, BigNumberish, string]
   ): string;
   encodeFunctionData(
-    functionFragment: "setdefaultDisputePeriod",
-    values: [BigNumberish]
+    functionFragment: "setVestingParameters",
+    values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "supportsInterface",
@@ -208,10 +213,6 @@ interface SkinnyDAOracleInterface extends ethers.utils.Interface {
     functionFragment: "configureIndex",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "defaultDisputePeriod",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "dispute", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "externalIdentifier",
@@ -226,7 +227,15 @@ interface SkinnyDAOracleInterface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "index", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "isDisputed", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "maxCliffTime",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "maxOutstandingDisputes",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "maxVestingTime",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "oracle", data: BytesLike): Result;
@@ -255,7 +264,7 @@ interface SkinnyDAOracleInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "setdefaultDisputePeriod",
+    functionFragment: "setVestingParameters",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -421,12 +430,11 @@ export class SkinnyDAOracle extends BaseContract {
       indexId: BytesLike,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber] & {
+      [BigNumber, BigNumber, BigNumber, BigNumber] & {
         total: BigNumber;
         poolAmount: BigNumber;
         reporterAmount: BigNumber;
         residualAmount: BigNumber;
-        vestingTime: BigNumber;
       }
     >;
 
@@ -444,8 +452,6 @@ export class SkinnyDAOracle extends BaseContract {
       sponsor: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
-
-    defaultDisputePeriod(overrides?: CallOverrides): Promise<[number]>;
 
     dispute(
       proposalId: BytesLike,
@@ -505,7 +511,11 @@ export class SkinnyDAOracle extends BaseContract {
 
     isDisputed(arg0: BytesLike, overrides?: CallOverrides): Promise<[boolean]>;
 
+    maxCliffTime(overrides?: CallOverrides): Promise<[number]>;
+
     maxOutstandingDisputes(overrides?: CallOverrides): Promise<[number]>;
+
+    maxVestingTime(overrides?: CallOverrides): Promise<[number]>;
 
     oracle(overrides?: CallOverrides): Promise<[string]>;
 
@@ -585,8 +595,9 @@ export class SkinnyDAOracle extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    setdefaultDisputePeriod(
-      disputePeriod: BigNumberish,
+    setVestingParameters(
+      vestingTime: BigNumberish,
+      cliffTime: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -619,12 +630,11 @@ export class SkinnyDAOracle extends BaseContract {
     indexId: BytesLike,
     overrides?: CallOverrides
   ): Promise<
-    [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber] & {
+    [BigNumber, BigNumber, BigNumber, BigNumber] & {
       total: BigNumber;
       poolAmount: BigNumber;
       reporterAmount: BigNumber;
       residualAmount: BigNumber;
-      vestingTime: BigNumber;
     }
   >;
 
@@ -642,8 +652,6 @@ export class SkinnyDAOracle extends BaseContract {
     sponsor: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
-
-  defaultDisputePeriod(overrides?: CallOverrides): Promise<number>;
 
   dispute(
     proposalId: BytesLike,
@@ -703,7 +711,11 @@ export class SkinnyDAOracle extends BaseContract {
 
   isDisputed(arg0: BytesLike, overrides?: CallOverrides): Promise<boolean>;
 
+  maxCliffTime(overrides?: CallOverrides): Promise<number>;
+
   maxOutstandingDisputes(overrides?: CallOverrides): Promise<number>;
+
+  maxVestingTime(overrides?: CallOverrides): Promise<number>;
 
   oracle(overrides?: CallOverrides): Promise<string>;
 
@@ -783,8 +795,9 @@ export class SkinnyDAOracle extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  setdefaultDisputePeriod(
-    disputePeriod: BigNumberish,
+  setVestingParameters(
+    vestingTime: BigNumberish,
+    cliffTime: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -817,12 +830,11 @@ export class SkinnyDAOracle extends BaseContract {
       indexId: BytesLike,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber] & {
+      [BigNumber, BigNumber, BigNumber, BigNumber] & {
         total: BigNumber;
         poolAmount: BigNumber;
         reporterAmount: BigNumber;
         residualAmount: BigNumber;
-        vestingTime: BigNumber;
       }
     >;
 
@@ -840,8 +852,6 @@ export class SkinnyDAOracle extends BaseContract {
       sponsor: string,
       overrides?: CallOverrides
     ): Promise<void>;
-
-    defaultDisputePeriod(overrides?: CallOverrides): Promise<number>;
 
     dispute(proposalId: BytesLike, overrides?: CallOverrides): Promise<void>;
 
@@ -898,7 +908,11 @@ export class SkinnyDAOracle extends BaseContract {
 
     isDisputed(arg0: BytesLike, overrides?: CallOverrides): Promise<boolean>;
 
+    maxCliffTime(overrides?: CallOverrides): Promise<number>;
+
     maxOutstandingDisputes(overrides?: CallOverrides): Promise<number>;
+
+    maxVestingTime(overrides?: CallOverrides): Promise<number>;
 
     oracle(overrides?: CallOverrides): Promise<string>;
 
@@ -984,8 +998,9 @@ export class SkinnyDAOracle extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    setdefaultDisputePeriod(
-      disputePeriod: BigNumberish,
+    setVestingParameters(
+      vestingTime: BigNumberish,
+      cliffTime: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -1239,8 +1254,6 @@ export class SkinnyDAOracle extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    defaultDisputePeriod(overrides?: CallOverrides): Promise<BigNumber>;
-
     dispute(
       proposalId: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -1269,7 +1282,11 @@ export class SkinnyDAOracle extends BaseContract {
 
     isDisputed(arg0: BytesLike, overrides?: CallOverrides): Promise<BigNumber>;
 
+    maxCliffTime(overrides?: CallOverrides): Promise<BigNumber>;
+
     maxOutstandingDisputes(overrides?: CallOverrides): Promise<BigNumber>;
+
+    maxVestingTime(overrides?: CallOverrides): Promise<BigNumber>;
 
     oracle(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -1339,8 +1356,9 @@ export class SkinnyDAOracle extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    setdefaultDisputePeriod(
-      disputePeriod: BigNumberish,
+    setVestingParameters(
+      vestingTime: BigNumberish,
+      cliffTime: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1392,10 +1410,6 @@ export class SkinnyDAOracle extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    defaultDisputePeriod(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     dispute(
       proposalId: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -1432,9 +1446,13 @@ export class SkinnyDAOracle extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    maxCliffTime(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     maxOutstandingDisputes(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    maxVestingTime(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     oracle(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
@@ -1510,8 +1528,9 @@ export class SkinnyDAOracle extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    setdefaultDisputePeriod(
-      disputePeriod: BigNumberish,
+    setVestingParameters(
+      vestingTime: BigNumberish,
+      cliffTime: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
